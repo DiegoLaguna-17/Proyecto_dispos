@@ -135,7 +135,7 @@ class _MapaLaPazState extends State<MapaLaPaz> {
                   child: Center(
                     child: widget.medio =='foot'?
                     PeatonIcono(size:300, 
-                    color: _coloresNodos[entry.key],x:x/100,y:y/100) : AutoIcono(color: _coloresNodos[entry.key]),
+                    color: _coloresNodos[entry.key],x:x/100,y:y/100) : AutoIcono(color: _coloresNodos[entry.key],x:x/100,y:y/100),
                   )
                 ),
               );
