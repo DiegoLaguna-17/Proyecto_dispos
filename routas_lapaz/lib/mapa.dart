@@ -5,6 +5,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:math';
 import 'package:routas_lapaz/formas.dart';
+
+import 'package:routas_lapaz/ayuda.dart';
+import 'package:routas_lapaz/mis_rutas.dart';
+import 'package:routas_lapaz/conoce.dart';
 class MapaLaPaz extends StatefulWidget {
   final String medio;
   const MapaLaPaz({super.key, required this.medio});
@@ -74,7 +78,16 @@ class _MapaLaPazState extends State<MapaLaPaz> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Mapa con rutas: ${widget.medio == 'foot' ? 'A pie' : 'En auto'}'),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Scaffold.of(context).openDrawer(); // Ahora sí funciona
+            },
+          ),
+        ),
       ),
+      drawer: _buildDrawer(context),
       body: FlutterMap(
         options: MapOptions(
           center: LatLng(-16.5, -68.11),
@@ -190,6 +203,163 @@ class _MapaLaPazState extends State<MapaLaPaz> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          const DrawerHeader(
+            decoration: BoxDecoration(
+              color: Color(0xFF3D8B7D),
+            ),
+            child: Text(
+              'Opciones de Rutas',
+              style: TextStyle(color: Colors.white, fontSize: 24),
+            ),
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.directions_walk,
+            title: 'Recorrido a pie',
+            isActive: widget.medio == 'foot', // Resalta si estamos en modo a pie
+            onTap: () {
+              if (widget.medio != 'foot') {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MapaLaPaz(medio: 'foot'),
+                  ),
+                );
+              } else {
+                Navigator.pop(context);
+              }
+            },
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.directions_car,
+            title: 'Recorrido en auto',
+            isActive: widget.medio == 'car', // Resalta si estamos en modo auto
+            onTap: () {
+              if (widget.medio != 'car') {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MapaLaPaz(medio: 'car'),
+                  ),
+                );
+              } else {
+                Navigator.pop(context);
+              }
+            },
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.alt_route,
+            title: 'Mis Rutas',
+            isActive: false,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const MisRutas()),
+              );
+            },
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.info,
+            title: 'Conoce más',
+            isActive: false,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ConocePage()),
+              );
+            },
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.help,
+            title: 'Ayuda',
+            isActive: false,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AyudaPage()),
+              );
+            },
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.exit_to_app,
+            title: 'Salir',
+            isActive: false,
+            onTap: () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    bool isHovered = false;
+    
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return MouseRegion(
+          onEnter: (_) => setState(() => isHovered = true),
+          onExit: (_) => setState(() => isHovered = false),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            decoration: BoxDecoration(
+              color: isActive
+                ? const Color(0xFFDBC557) // Amarillo para opción activa
+                : isHovered
+                    ? const Color(0xFFECBDBF) // Rosa claro para hover
+                    : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: ListTile(
+              leading: Icon(
+                icon,
+                color: isActive
+                  ? const Color(0xFF17584C) // Verde oscuro para activo
+                  : isHovered
+                      ? const Color(0xFF17584C) // Verde oscuro para hover
+                      : const Color(0xFF3D8B7D), // Verde normal
+              ),
+              title: Text(
+                title,
+                style: TextStyle(
+                  color: isActive
+                    ? const Color(0xFF17584C) // Verde oscuro para activo
+                    : isHovered
+                        ? const Color(0xFF17584C) // Verde oscuro para hover
+                        : Colors.black87, // Negro para normal
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+              onTap: onTap,
+              hoverColor: Colors.transparent,
+            ),
+          ),
+        );
+      },
     );
   }
 
