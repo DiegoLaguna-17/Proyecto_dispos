@@ -5,13 +5,15 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:math';
 import 'package:routas_lapaz/formas.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:routas_lapaz/ayuda.dart';
 import 'package:routas_lapaz/mis_rutas.dart';
 import 'package:routas_lapaz/conoce.dart';
 class MapaLaPaz extends StatefulWidget {
   final String medio;
-  const MapaLaPaz({super.key, required this.medio});
+   final Map<String, dynamic>? rutaGuardada;
+
+  const MapaLaPaz({super.key, required this.medio, this.rutaGuardada});
 
   @override
   State<MapaLaPaz> createState() => _MapaLaPazState();
@@ -73,6 +75,48 @@ class _MapaLaPazState extends State<MapaLaPaz> {
   static const String graphhopperApiKey = '63b19cd4-a9f9-47bd-a58b-0273d67721fa'; // Tu clave de GraphHopper
   //key 1 7bfad773-8832-4eee-9d15-1a9d07c3a5c1
   // key 2 63b19cd4-a9f9-47bd-a58b-0273d67721fa
+  @override
+void initState() {
+  super.initState();
+  if (widget.rutaGuardada != null) {
+    final data = widget.rutaGuardada!;
+    _nodos = (data['nodos'] as List)
+        .map((n) => LatLng(n['lat'], n['lng']))
+        .toList();
+
+    _coloresNodos = (data['coloresNodos'] as List)
+        .map((v) => Color(v))
+        .toList();
+
+    _edges = (data['edges'] as List).map((e) {
+      return Edge(
+        e['from'],
+        e['to'],
+        (e['weight'] as num).toDouble(),
+        (e['ruta'] as List).map((p) => LatLng(p['lat'], p['lng'])).toList(),
+        LatLng(e['labelPoint']['lat'], e['labelPoint']['lng']),
+        e['labelText'],
+        Color(e['color']),
+        descripcionApi: e['descripcionApi'],
+      );
+    }).toList();
+
+    _mstEdges = (data['mstEdges'] as List).map((e) {
+      return Edge(
+        e['from'],
+        e['to'],
+        (e['weight'] as num).toDouble(),
+        (e['ruta'] as List).map((p) => LatLng(p['lat'], p['lng'])).toList(),
+        LatLng(e['labelPoint']['lat'], e['labelPoint']['lng']),
+        e['labelText'],
+        Color(e['color']),
+        descripcionApi: e['descripcionApi'],
+      );
+    }).toList();
+  }
+  _actualizarCapaRutasYLabels();
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -201,6 +245,32 @@ class _MapaLaPazState extends State<MapaLaPaz> {
             label: const Text(''),
             icon: const Icon(Icons.delete),
           ),
+          const SizedBox(height: 10),
+          FloatingActionButton.extended(
+            onPressed: () {
+               if (_mostrandoMST) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Para limpiar, primero muestra todas las rutas."),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                  return;
+                }
+              if (_nodos.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("No hay puntos a eliminar"),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              } else {
+                _guardarRutaActual(context);
+              }
+            },
+            label: const Text(''),
+            icon: const Icon(Icons.save),
+          ),
         ],
       ),
     );
@@ -308,6 +378,83 @@ class _MapaLaPazState extends State<MapaLaPaz> {
       ),
     );
   }
+Future<void> _guardarRutaActual(BuildContext context) async {
+  // Mostrar diálogo para ingresar el nombre
+  final nombre = await showDialog<String>(
+    context: context,
+    builder: (context) {
+      String nombreRuta = '';
+      return AlertDialog(
+        title: const Text('Guardar ruta'),
+        content: TextField(
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Nombre de la ruta',
+            hintText: 'Ej: Ruta al trabajo',
+          ),
+          onChanged: (value) => nombreRuta = value,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, nombreRuta),
+            child: const Text('Guardar'),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (nombre == null || nombre.isEmpty) return;
+
+  // Armar el objeto ruta
+  final rutaActual = {
+    'medio':widget.medio,
+    'nombre': nombre,
+    'fecha': DateTime.now().toIso8601String(),
+    'nodos': _nodos.map((n) => {'lat': n.latitude, 'lng': n.longitude}).toList(),
+    'edges': _edges.map((e) => {
+      'from': e.from,
+      'to': e.to,
+      'weight': e.weight,
+      'ruta': e.ruta.map((p) => {'lat': p.latitude, 'lng': p.longitude}).toList(),
+      'labelPoint': {'lat': e.labelPoint.latitude, 'lng': e.labelPoint.longitude},
+      'labelText': e.labelText,
+      'color': e.color.value,
+      'descripcionApi': e.descripcionApi,
+    }).toList(),
+    'mstEdges': _mstEdges.map((e) => {
+      'from': e.from,
+      'to': e.to,
+      'weight': e.weight,
+      'ruta': e.ruta.map((p) => {'lat': p.latitude, 'lng': p.longitude}).toList(),
+      'labelPoint': {'lat': e.labelPoint.latitude, 'lng': e.labelPoint.longitude},
+      'labelText': e.labelText,
+      'color': e.color.value,
+      'descripcionApi': e.descripcionApi,
+    }).toList(),
+    'coloresNodos': _coloresNodos.map((c) => c.value).toList(),
+  };
+
+  // Guardar en SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
+  final rutasGuardadas = prefs.getStringList('rutas_guardadas') ?? [];
+  rutasGuardadas.add(jsonEncode(rutaActual));
+  await prefs.setStringList('rutas_guardadas', rutasGuardadas);
+
+  if (!context.mounted) return;
+
+  // Mostrar notificación
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text('Ruta "$nombre" guardada correctamente'),
+      duration: const Duration(seconds: 2),
+    ),
+  );
+}
 
   Widget _buildMenuItem(
     BuildContext context, {

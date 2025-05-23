@@ -3,7 +3,8 @@ import 'package:routas_lapaz/mapa.dart';
 import 'package:routas_lapaz/conoce.dart';
 import 'package:routas_lapaz/ayuda.dart';
 import 'package:routas_lapaz/home.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 class MisRutas extends StatefulWidget {
   const MisRutas({super.key});
 
@@ -12,6 +13,23 @@ class MisRutas extends StatefulWidget {
 }
 
 class _MisRutasState extends State<MisRutas> {
+    List<Map<String, dynamic>> _rutasGuardadas = [];
+   @override
+  void initState() {
+    super.initState();
+    _cargarRutasGuardadas();
+  }
+
+  Future<void> _cargarRutasGuardadas() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rutasJson = prefs.getStringList('rutas_guardadas') ?? [];
+
+    setState(() {
+      _rutasGuardadas = rutasJson
+          .map((r) => jsonDecode(r) as Map<String, dynamic>)
+          .toList();
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -27,11 +45,41 @@ class _MisRutasState extends State<MisRutas> {
         ),
       ),
       drawer: _buildDrawer(context),
-      body: const Center(
-        child: Text('Aquí se mostrarán tus rutas guardadas'),
+      body: _rutasGuardadas.isEmpty
+    ? const Center(child: Text('No hay rutas guardadas'))
+    : ListView.builder(
+        itemCount: _rutasGuardadas.length,
+        itemBuilder: (context, index) {
+          final ruta = _rutasGuardadas[index];
+          return Card(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: ListTile(
+              title: Text(ruta['nombre'] ?? 'Ruta sin nombre'),
+              subtitle: Text(
+                ruta['fecha'] != null
+                    ? DateTime.parse(ruta['fecha']).toLocal().toString()
+                    : '',
+              ),
+              trailing: const Icon(Icons.map),
+              onTap: () => _abrirRutaEnMapa(ruta),
+            ),
+          );
+        },
       ),
+
     );
   }
+void _abrirRutaEnMapa(Map<String, dynamic> ruta) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => MapaLaPaz(
+        medio: ruta['medio'],
+        rutaGuardada: ruta,
+      ),
+    ),
+  );
+}
 
   Widget _buildDrawer(BuildContext context) {
     return Drawer(
