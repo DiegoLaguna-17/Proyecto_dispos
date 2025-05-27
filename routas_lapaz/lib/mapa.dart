@@ -75,44 +75,54 @@ class _MapaLaPazState extends State<MapaLaPaz> {
   static const String graphhopperApiKey = '63b19cd4-a9f9-47bd-a58b-0273d67721fa'; // Tu clave de GraphHopper
   //key 1 7bfad773-8832-4eee-9d15-1a9d07c3a5c1
   // key 2 63b19cd4-a9f9-47bd-a58b-0273d67721fa
-  @override
+@override
 void initState() {
   super.initState();
   if (widget.rutaGuardada != null) {
     final data = widget.rutaGuardada!;
-    _nodos = (data['nodos'] as List)
-        .map((n) => LatLng(n['lat'], n['lng']))
-        .toList();
+    
+    // Verificar si 'nodos' existe y no está vacío
+    if (data['nodos'] != null && data['nodos'] is List && (data['nodos'] as List).isNotEmpty) {
+      _nodos = (data['nodos'] as List)
+          .map((n) => LatLng(n['lat'], n['lng']))
+          .toList();
 
-    _coloresNodos = (data['coloresNodos'] as List)
-        .map((v) => Color(v))
-        .toList();
+      _coloresNodos = (data['coloresNodos'] as List)
+          .map((v) => Color(v))
+          .toList();
+    }
 
-    _edges = (data['edges'] as List).map((e) {
-      return Edge(
-        e['from'],
-        e['to'],
-        (e['weight'] as num).toDouble(),
-        (e['ruta'] as List).map((p) => LatLng(p['lat'], p['lng'])).toList(),
-        LatLng(e['labelPoint']['lat'], e['labelPoint']['lng']),
-        e['labelText'],
-        Color(e['color']),
-        descripcionApi: e['descripcionApi'],
-      );
-    }).toList();
+    // Inicializar edges si existen
+    if (data['edges'] != null && data['edges'] is List) {
+      _edges = (data['edges'] as List).map((e) {
+        return Edge(
+          e['from'],
+          e['to'],
+          (e['weight'] as num).toDouble(),
+          (e['ruta'] as List).map((p) => LatLng(p['lat'], p['lng'])).toList(),
+          LatLng(e['labelPoint']['lat'], e['labelPoint']['lng']),
+          e['labelText'],
+          Color(e['color']),
+          descripcionApi: e['descripcionApi'],
+        );
+      }).toList();
+    }
 
-    _mstEdges = (data['mstEdges'] as List).map((e) {
-      return Edge(
-        e['from'],
-        e['to'],
-        (e['weight'] as num).toDouble(),
-        (e['ruta'] as List).map((p) => LatLng(p['lat'], p['lng'])).toList(),
-        LatLng(e['labelPoint']['lat'], e['labelPoint']['lng']),
-        e['labelText'],
-        Color(e['color']),
-        descripcionApi: e['descripcionApi'],
-      );
-    }).toList();
+    // Inicializar mstEdges si existen
+    if (data['mstEdges'] != null && data['mstEdges'] is List) {
+      _mstEdges = (data['mstEdges'] as List).map((e) {
+        return Edge(
+          e['from'],
+          e['to'],
+          (e['weight'] as num).toDouble(),
+          (e['ruta'] as List).map((p) => LatLng(p['lat'], p['lng'])).toList(),
+          LatLng(e['labelPoint']['lat'], e['labelPoint']['lng']),
+          e['labelText'],
+          Color(e['color']),
+          descripcionApi: e['descripcionApi'],
+        );
+      }).toList();
+    }
   }
   _actualizarCapaRutasYLabels();
 }
@@ -146,6 +156,13 @@ void initState() {
               );
               return;
             }
+
+            // MOSTRAR COORDENADAS EN CONSOLA
+            print('══════════════════════════════════════════════════');
+            print('Nuevo nodo agregado en coordenadas:');
+            print('Latitud: ${point.latitude}');
+            print('Longitud: ${point.longitude}');
+            print('══════════════════════════════════════════════════');
 
             int nuevoNodoIndex = _nodos.length; // El índice que tendrá el nuevo nodo
 
@@ -203,22 +220,7 @@ void initState() {
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          FloatingActionButton.extended(
-            onPressed: () {
-              if (_nodos.length < 2 && !_mostrandoMST) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Se necesitan al menos 2 puntos para calcular la ruta más rápida"),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              } else {
-                aplicarKruskal();
-              }
-            },
-            label: Text(_mostrandoMST ? 'Mostrar todas las rutas' : 'Ruta más rápida'),
-            icon: Icon(_mostrandoMST ? Icons.map : Icons.alt_route),
-          ),
+          
           const SizedBox(height: 10),
           FloatingActionButton.extended(
             onPressed: () {
