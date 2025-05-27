@@ -3,8 +3,10 @@ import 'package:routas_lapaz/mapa.dart';
 import 'package:routas_lapaz/conoce.dart';
 import 'package:routas_lapaz/ayuda.dart';
 import 'package:routas_lapaz/home.dart';
+import 'package:routas_lapaz/sugerencias.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+
 class MisRutas extends StatefulWidget {
   const MisRutas({super.key});
 
@@ -13,8 +15,9 @@ class MisRutas extends StatefulWidget {
 }
 
 class _MisRutasState extends State<MisRutas> {
-    List<Map<String, dynamic>> _rutasGuardadas = [];
-   @override
+  List<Map<String, dynamic>> _rutasGuardadas = [];
+  
+  @override
   void initState() {
     super.initState();
     _cargarRutasGuardadas();
@@ -30,11 +33,31 @@ class _MisRutasState extends State<MisRutas> {
           .toList();
     });
   }
+
+  Future<void> _eliminarRuta(int index) async {
+    final prefs = await SharedPreferences.getInstance();
+    final rutasGuardadas = prefs.getStringList('rutas_guardadas') ?? [];
+    
+    if (index >= 0 && index < rutasGuardadas.length) {
+      rutasGuardadas.removeAt(index);
+      await prefs.setStringList('rutas_guardadas', rutasGuardadas);
+      _cargarRutasGuardadas(); // Recargar la lista
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ruta eliminada correctamente'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mis Rutas Guardadas'),
+        backgroundColor: const Color(0xFF3D8B7D),
         leading: Builder(
           builder: (context) => IconButton(
             icon: const Icon(Icons.menu),
@@ -45,41 +68,170 @@ class _MisRutasState extends State<MisRutas> {
         ),
       ),
       drawer: _buildDrawer(context),
-      body: _rutasGuardadas.isEmpty
-    ? const Center(child: Text('No hay rutas guardadas'))
-    : ListView.builder(
-        itemCount: _rutasGuardadas.length,
-        itemBuilder: (context, index) {
-          final ruta = _rutasGuardadas[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: ListTile(
-              title: Text(ruta['nombre'] ?? 'Ruta sin nombre'),
-              subtitle: Text(
-                ruta['fecha'] != null
-                    ? DateTime.parse(ruta['fecha']).toLocal().toString()
-                    : '',
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF9DFE0),
+              Color(0xFF8FBC91),
+            ],
+          ),
+        ),
+        child: _rutasGuardadas.isEmpty
+          ? const Center(
+              child: Text(
+                'No hay rutas guardadas',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Color(0xFF17584C),
+                ),
               ),
-              trailing: const Icon(Icons.map),
-              onTap: () => _abrirRutaEnMapa(ruta),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              itemCount: _rutasGuardadas.length,
+              itemBuilder: (context, index) {
+                final ruta = _rutasGuardadas[index];
+                return _buildRutaCard(context, ruta, index);
+              },
             ),
-          );
-        },
       ),
-
     );
   }
-void _abrirRutaEnMapa(Map<String, dynamic> ruta) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => MapaLaPaz(
-        medio: ruta['medio'],
-        rutaGuardada: ruta,
+
+  Widget _buildRutaCard(BuildContext context, Map<String, dynamic> ruta, int index) {
+    final fecha = ruta['fecha'] != null 
+        ? DateTime.parse(ruta['fecha']).toLocal()
+        : null;
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-    ),
-  );
-}
+      child: Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        color: Colors.white.withOpacity(0.8),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      ruta['nombre'] ?? 'Ruta sin nombre',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF17584C),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Color(0xFFECBDBF)),
+                    onPressed: () => _mostrarDialogoEliminar(index),
+                  ),
+                ],
+              ),
+              if (fecha != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Creada: ${fecha.day}/${fecha.month}/${fecha.year} ${fecha.hour}:${fecha.minute.toString().padLeft(2, '0')}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black54),
+                ),
+              ],
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    ruta['medio'] == 'foot' ? Icons.directions_walk : Icons.directions_car,
+                    color: const Color(0xFF3D8B7D),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    ruta['medio'] == 'foot' ? 'A pie' : 'En auto',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF3D8B7D)),
+                  ),
+                  const Spacer(),
+                  ElevatedButton(
+                    onPressed: () => _abrirRutaEnMapa(ruta),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFDBC557),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    child: const Text(
+                      'Ver en mapa',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _mostrarDialogoEliminar(int index) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar ruta'),
+        content: const Text('¿Estás seguro de que quieres eliminar esta ruta?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _eliminarRuta(index);
+            },
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _abrirRutaEnMapa(Map<String, dynamic> ruta) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapaLaPaz(
+          medio: ruta['medio'],
+          rutaGuardada: ruta,
+        ),
+      ),
+    );
+  }
 
   Widget _buildDrawer(BuildContext context) {
     return Drawer(
@@ -127,8 +279,21 @@ void _abrirRutaEnMapa(Map<String, dynamic> ruta) {
             context,
             icon: Icons.alt_route,
             title: 'Mis Rutas',
-            isActive: true, // Resaltar esta opción cuando estemos aquí
+            isActive: true,
             onTap: () => Navigator.pop(context),
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.accessibility_new,
+            title: 'lugares',
+            isActive: false,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SugerenciasPage()),
+              );
+            },
           ),
           _buildMenuItem(
             context,
@@ -188,9 +353,9 @@ void _abrirRutaEnMapa(Map<String, dynamic> ruta) {
             duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
               color: isActive
-                ? const Color(0xFFDBC557) // Color para pestaña activa
+                ? const Color(0xFFDBC557)
                 : isHovered
-                    ? const Color(0xFFECBDBF) // Color hover
+                    ? const Color(0xFFECBDBF)
                     : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
             ),
@@ -199,19 +364,19 @@ void _abrirRutaEnMapa(Map<String, dynamic> ruta) {
               leading: Icon(
                 icon,
                 color: isActive
-                  ? const Color(0xFF17584C) // Color icono activo
+                  ? const Color(0xFF17584C)
                   : isHovered
-                      ? const Color(0xFF17584C) // Color icono hover
-                      : const Color(0xFF3D8B7D), // Color icono normal
+                      ? const Color(0xFF17584C)
+                      : const Color(0xFF3D8B7D),
               ),
               title: Text(
                 title,
                 style: TextStyle(
                   color: isActive
-                    ? const Color(0xFF17584C) // Color texto activo
+                    ? const Color(0xFF17584C)
                     : isHovered
-                        ? const Color(0xFF17584C) // Color texto hover
-                        : Colors.black87, // Color texto normal
+                        ? const Color(0xFF17584C)
+                        : Colors.black87,
                   fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
                 ),
               ),

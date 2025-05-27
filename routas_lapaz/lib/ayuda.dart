@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:routas_lapaz/conoce.dart';
 import 'package:routas_lapaz/mapa.dart';
+import 'package:routas_lapaz/sugerencias.dart';
 import 'package:routas_lapaz/mis_rutas.dart';
 
 class AyudaPage extends StatelessWidget {
@@ -277,6 +278,19 @@ class AyudaPage extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const MisRutas()),
+              );
+            },
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.accessibility_new,
+            title: 'lugares',
+            isActive: false,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SugerenciasPage()),
               );
             },
           ),
