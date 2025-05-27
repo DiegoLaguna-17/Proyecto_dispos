@@ -220,7 +220,24 @@ void initState() {
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          
+          const SizedBox(height: 10),
+          FloatingActionButton.extended(
+            onPressed: () {
+               
+              if (_nodos.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("No hay puntos para encontrar una ruta"),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              } else {
+                aplicarKruskal();
+              }
+            },
+            label: const Text('Ruta Corta'),
+            icon: const Icon(Icons.shuffle),
+          ),
           const SizedBox(height: 10),
           FloatingActionButton.extended(
             onPressed: () {
@@ -250,19 +267,11 @@ void initState() {
           const SizedBox(height: 10),
           FloatingActionButton.extended(
             onPressed: () {
-               if (_mostrandoMST) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Para limpiar, primero muestra todas las rutas."),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                  return;
-                }
+               
               if (_nodos.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text("No hay puntos a eliminar"),
+                    content: Text("No hay rutas a guardar"),
                     duration: Duration(seconds: 2),
                   ),
                 );
