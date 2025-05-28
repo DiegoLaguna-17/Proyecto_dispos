@@ -46,7 +46,7 @@ class LugaresPage extends StatelessWidget {
                   context,
                   imagePath: 'assets/san_francisco.jpg',
                   text: 'Iglesia San Francisco',
-                  coords: const LatLng(-16.4958, -68.1338),
+                  coords: const LatLng(-16.49630, -68.13715),
                 ),
                 const SizedBox(height: 40),
               ],
