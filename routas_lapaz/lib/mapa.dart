@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:routas_lapaz/ayuda.dart';
 import 'package:routas_lapaz/mis_rutas.dart';
 import 'package:routas_lapaz/conoce.dart';
+import 'package:routas_lapaz/sugerencias.dart';
 class MapaLaPaz extends StatefulWidget {
   final String medio;
    final Map<String, dynamic>? rutaGuardada;
@@ -220,6 +221,7 @@ void initState() {
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+<<<<<<< Updated upstream
           const SizedBox(height: 10),
           FloatingActionButton.extended(
             onPressed: () {
@@ -228,6 +230,14 @@ void initState() {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text("No hay puntos para encontrar una ruta"),
+=======
+          FloatingActionButton.extended(
+            onPressed: () {
+              if (_nodos.length < 2 && !_mostrandoMST) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Se necesitan al menos 2 puntos para calcular la ruta más rápida"),
+>>>>>>> Stashed changes
                     duration: Duration(seconds: 2),
                   ),
                 );
@@ -235,21 +245,27 @@ void initState() {
                 aplicarKruskal();
               }
             },
+<<<<<<< Updated upstream
             label: const Text('Ruta Corta'),
             icon: const Icon(Icons.shuffle),
+=======
+            label: Text(_mostrandoMST ? 'Mostrar todas las rutas' : 'Ruta más rápida'),
+            icon: Icon(_mostrandoMST ? Icons.map : Icons.alt_route),
+            backgroundColor: const Color(0xFF3D8B7D),
+>>>>>>> Stashed changes
           ),
           const SizedBox(height: 10),
           FloatingActionButton.extended(
             onPressed: () {
-               if (_mostrandoMST) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Para limpiar, primero muestra todas las rutas."),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                  return;
-                }
+              if (_mostrandoMST) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Para limpiar, primero muestra todas las rutas."),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+                return;
+              }
               if (_nodos.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -261,17 +277,34 @@ void initState() {
                 _dialogoBorrarTodo(context);
               }
             },
-            label: const Text(''),
+            label: const Text('Limpiar'),
             icon: const Icon(Icons.delete),
+            backgroundColor: const Color(0xFFECBDBF),
           ),
           const SizedBox(height: 10),
           FloatingActionButton.extended(
             onPressed: () {
+<<<<<<< Updated upstream
                
               if (_nodos.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text("No hay rutas a guardar"),
+=======
+              if (_mostrandoMST) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Para guardar, primero muestra todas las rutas."),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+                return;
+              }
+              if (_nodos.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("No hay puntos para guardar"),
+>>>>>>> Stashed changes
                     duration: Duration(seconds: 2),
                   ),
                 );
@@ -279,8 +312,9 @@ void initState() {
                 _guardarRutaActual(context);
               }
             },
-            label: const Text(''),
+            label: const Text('Guardar'),
             icon: const Icon(Icons.save),
+            backgroundColor: const Color(0xFFDBC557),
           ),
         ],
       ),
@@ -347,6 +381,19 @@ void initState() {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const MisRutas()),
+              );
+            },
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.accessibility_new,
+            title: 'lugares',
+            isActive: false,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SugerenciasPage()),
               );
             },
           ),
